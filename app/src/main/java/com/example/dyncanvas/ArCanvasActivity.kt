@@ -1,8 +1,11 @@
 package com.example.dyncanvas
 
 import android.annotation.SuppressLint
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.os.Bundle
+import android.os.Environment
 import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
 import com.example.dyncanvas.helpers.sessionHelper
@@ -17,6 +20,7 @@ import com.google.ar.sceneform.math.Vector3
 import com.google.ar.sceneform.rendering.*
 import com.google.ar.sceneform.ux.ArFragment
 import com.google.ar.sceneform.ux.TransformableNode
+import java.io.File
 
 
 /**
@@ -40,22 +44,26 @@ class ARCanvasActivity : AppCompatActivity() {
 
             when (intent.extras?.getInt("order")) {
 
-                1 -> makeSmallCanvas(hitResult, Color.BLUE)
+                1 -> makeSmallCanvas(hitResult)
 
-                2 -> makeLargeCanvas(hitResult, Color.GREEN)
+                2 -> makeLargeCanvas(hitResult)
             }
 
         }
     }
 
     @SuppressLint("ResourceType")
-    private fun makeSmallCanvas(hitResult: HitResult, color: Int) {
+    private fun makeSmallCanvas(hitResult: HitResult) {
+        val img = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM)
+        val bitmap: Bitmap = BitmapFactory.decodeFile(img.path + "/Camera/20220918_185915.jpg")
+        val sampler = Texture.Sampler.builder()
+            .setWrapMode(Texture.Sampler.WrapMode.CLAMP_TO_EDGE)
+            .build()
         Texture.builder()
-            .setSource(this, R.drawable.ic_launcher_foreground)
+            .setSource(bitmap)
+            .setSampler(sampler)
             .build()
             .thenAccept { texture ->
-
-
                 MaterialFactory.makeOpaqueWithTexture(
                     this,
                     texture
@@ -64,7 +72,7 @@ class ARCanvasActivity : AppCompatActivity() {
                         addNodeToScene(
                             fragment, hitResult.createAnchor(),
                             ShapeFactory.makeCube(
-                                Vector3(0.2f, 0.2f, 0.01f),
+                                Vector3(0.5f, 0.2f, 0.01f),
                                 Vector3(0.0f, 0.15f, 0.0f),
                                 material
                             )
@@ -74,34 +82,43 @@ class ARCanvasActivity : AppCompatActivity() {
             }
     }
 
-    private fun makeLargeCanvas(hitResult: HitResult, color: Int) {
-        MaterialFactory.makeOpaqueWithColor(
-            this,
-            com.google.ar.sceneform.rendering.Color(color)
-        )
-            .thenAccept { material ->
-                addNodeToScene(
-                    fragment, hitResult.createAnchor(),
-                    ShapeFactory.makeCube(
-                        Vector3(0.4f, 0.4f, 0.01f),
-                        Vector3(0.0f, 0.15f, 0.0f),
-                        material
-                    )
-                )
+    private fun makeLargeCanvas(hitResult: HitResult) {
+        val img = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM)
+        val bitmap: Bitmap = BitmapFactory.decodeFile(img.path + "/Camera/20220918_185915.jpg")
+        val sampler = Texture.Sampler.builder()
+            .setWrapMode(Texture.Sampler.WrapMode.CLAMP_TO_EDGE)
+            .build()
 
+        Texture.builder()
+            .setSampler(sampler)
+            .setSource(bitmap)
+            .build()
+            .thenAccept { texture ->
+                MaterialFactory.makeTransparentWithTexture(
+                    this,
+                    texture
+                )
+                    .thenAccept { material ->
+                        addNodeToScene(
+                            fragment, hitResult.createAnchor(),
+                            ShapeFactory.makeCube(
+                                Vector3(0.025f, 0.4f, 1.0f),
+                                Vector3(0f, 0.15f, 0f),
+                                material
+                            )
+                        )
+                    }
             }
     }
 
+    // Anchor texture to first node child
     private fun addNodeToScene(fragment: ArFragment, anchor: Anchor, modelObject: ModelRenderable) {
-
         val anchorNode = AnchorNode(anchor)
-
         TransformableNode(fragment.transformationSystem).apply {
             renderable = modelObject
             setParent(anchorNode)
             select()
         }
-
         fragment.arSceneView.scene.addChild(anchorNode)
     }
 
